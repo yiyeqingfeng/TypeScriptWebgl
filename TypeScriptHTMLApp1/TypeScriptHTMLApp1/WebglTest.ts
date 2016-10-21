@@ -1,0 +1,7 @@
+﻿class WebglTest
+{
+    constructor()
+    { }
+
+
+}
