@@ -2,10 +2,9 @@ var WebglTest = (function () {
     function WebglTest() {
         this.testVertexCode = '\
     attribute vec3 aVertexPosition;\
-    uniform mat4 uMVMatrix;\
-    uniform mat4 uPMatrix;\
+    uniform mat4 mvpMatrix;\
     void main(void){\
-        gl_Position = uPMatrix*uMVMatrix*vec4(aVertexPosition,1.0);\
+        gl_Position = mvpMatrix*vec4(aVertexPosition,1.0);\
     }';
         this.testFragmentCode = '\
     void main(void){\
@@ -14,7 +13,9 @@ var WebglTest = (function () {
         this.canvas = document.getElementById("Canvas");
         console.log("canvas:" + this.canvas);
         this.webgl = this.canvas.getContext('experimental-webgl') || this.canvas.getContext('webgl');
+        console.log("webgl:" + this.webgl);
         if (this.webgl) {
+            //   this.webgl.clear(this.webgl.COLOR_CLEAR_VALUE);
             this.webgl.clearColor(0.0, 0.0, 0.0, 1.0); // Set clear color to black, fully opaque
             this.webgl.clearDepth(1.0); // Clear everything
             this.webgl.enable(this.webgl.DEPTH_TEST); // Enable depth testing
@@ -25,7 +26,8 @@ var WebglTest = (function () {
         this.getVertShader();
         this.getFragShader();
         this.creatProgram();
-        this.drawObj();
+        // setInterval(this.drawScene,15);
+        this.drawScene();
     };
     WebglTest.prototype.getVertShader = function () {
         if (this.vertShader)
@@ -51,12 +53,12 @@ var WebglTest = (function () {
         this.webgl.linkProgram(this.program);
         this.webgl.useProgram(this.program);
     };
-    WebglTest.prototype.drawObj = function () {
+    WebglTest.prototype.drawScene = function () {
+        this.webgl.clear(this.webgl.COLOR_BUFFER_BIT | this.webgl.DEPTH_BUFFER_BIT);
         var vertices = [
-            1.0, 1.0, 0.0,
-            -1.0, 1.0, 0.0,
-            1.0, -1.0, 0.0,
-            -1.0, -1.0, 0.0,
+            0.0, 1.0, 0.0,
+            1.0, 0.0, 0.0,
+            -1.0, 0.0, 0.0
         ];
         var squareVerticesBuffer = this.webgl.createBuffer();
         var vertexPosAttr = this.webgl.getAttribLocation(this.program, "aVertexPosition");
@@ -64,7 +66,21 @@ var WebglTest = (function () {
         this.webgl.bufferData(this.webgl.ARRAY_BUFFER, new Float32Array(vertices), this.webgl.STATIC_DRAW);
         this.webgl.enableVertexAttribArray(vertexPosAttr);
         this.webgl.vertexAttribPointer(vertexPosAttr, 3, this.webgl.FLOAT, false, 0, 0);
-        this.webgl.drawArrays(this.webgl.TRIANGLE_STRIP, 0, 4);
+        var m = new matIV();
+        var mMatrix = m.identity(m.create()); //模型变换矩阵
+        var vMatrix = m.identity(m.create()); //视图变换矩阵
+        var pMatrix = m.identity(m.create()); //投影变换矩阵
+        var mvpMatrix = m.identity(m.create()); //相乘中和矩阵
+        //视图变换坐标矩阵
+        m.lookAt([0.0, 1.0, 3.0], [0, 0, 0], [0, 1, 0], vMatrix);
+        //投影变换矩阵
+        m.perspective(90, this.canvas.width / this.canvas.height, 0.1, 100, pMatrix);
+        m.multiply(pMatrix, vMatrix, mvpMatrix);
+        m.multiply(mvpMatrix, mMatrix, mvpMatrix);
+        var unilocation = this.webgl.getUniformLocation(this.program, 'mvpMatrix');
+        this.webgl.uniformMatrix4fv(unilocation, false, mvpMatrix);
+        this.webgl.drawArrays(this.webgl.TRIANGLE_STRIP, 0, 3);
+        this.webgl.flush();
     };
     WebglTest.prototype.getShader = function (gl, id) {
         var shaderScript = document.getElementById(id);

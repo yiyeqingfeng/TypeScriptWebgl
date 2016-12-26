@@ -29,6 +29,7 @@
   <ItemGroup>
     <TypeScriptCompile Include="app.ts" />
     <TypeScriptCompile Include="MatrixHelper.ts" />
+    <TypeScriptCompile Include="minMatrix.ts" />
     <TypeScriptCompile Include="WebglTest.ts" />
   </ItemGroup>
   <ItemGroup>
